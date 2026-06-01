@@ -1,0 +1,18 @@
+from faststream.rabbit import RabbitRouter
+
+from .queue import *
+from .schemas import SendVerifyEmail
+
+router = RabbitRouter()
+
+
+@router.subscriber(queue=new_user)
+async def new_user_subscriber():
+    pass
+
+
+@router.subscriber(queue=verify_email)
+async def verify_email_subscriber(data: SendVerifyEmail):
+
+    # await send_verify_email(data)
+    print("Успешная отправка OTP кода")

@@ -1,22 +1,26 @@
-import smtplib
-from email.message import EmailMessage
+from contextlib import asynccontextmanager
 
-# Настройки подключения
-sender = "koozma-alex@mail.ru"
-password = "OQqVSHOv7RJHLuK0VPeC"
-recipient = "recipient@example.com"
+import uvicorn
+from fastapi import FastAPI
 
-msg = EmailMessage()
-msg.set_content("Привет! Это тестовое сообщение из Python.")
-msg["Subject"] = "Тема письма"
-msg["From"] = sender
-msg["To"] = recipient
+from admin_service.router import router as admin_service_router
+from auth_service.router import router as auth_service_router
+from broker.main import mq_router
 
-# Отправка через SSL (например, для Yandex, Mail.ru)
-try:
-    with smtplib.SMTP_SSL(host="smtp.mail.ru", port=465) as server:
-        server.login(sender, password)
-        server.send_message(msg)
-    print("Письмо успешно отправлено!")
-except Exception as e:
-    print(f"Ошибка: {e}")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    print("Lifespan")
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+app.include_router(auth_service_router)
+app.include_router(admin_service_router)
+app.include_router(mq_router)
+
+if __name__ == "__main__":
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
