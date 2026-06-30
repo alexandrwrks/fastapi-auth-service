@@ -3,7 +3,7 @@ import asyncio
 from faststream import FastStream
 from faststream.rabbit import RabbitBroker
 
-from notification_service.subscriber import router
+from notification_service.rabbit.subscriber import router
 
 broker = RabbitBroker()
 

@@ -1,7 +1,7 @@
 from faststream.rabbit import RabbitRouter
 
-from .queue import *
-from .schemas import SendVerifyEmail
+from notification_service.rabbit.queue import *
+from notification_service.schemas import SendVerifyEmail
 
 router = RabbitRouter()
 

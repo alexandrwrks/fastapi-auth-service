@@ -1,7 +1,7 @@
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db.models import RefreshToken
+from db.models.models import RefreshToken
 
 
 class RefreshTokenRepository:

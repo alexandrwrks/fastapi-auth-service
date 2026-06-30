@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends
 
 from auth_service.schemas import LoginSchema, RefreshSchema, RegisterSchema
-from auth_service.service import AuthService
+from auth_service.services.auth import AuthService
 from deps import get_auth_service, get_current_user
 
 router = APIRouter(prefix="/auth_service", tags=["auth_service"])
+
+"""
+router  v1/auth_srvice
+"""
 
 
 @router.post("/register")
@@ -20,7 +24,7 @@ async def login(
     data: LoginSchema,
     service: AuthService = Depends(get_auth_service),
 ):
-    return await service.login(data.username, data.password)
+    return await service.login(data)
 
 
 @router.post("/refresh")
@@ -28,7 +32,6 @@ async def refresh(
     token: RefreshSchema,
     service: AuthService = Depends(get_auth_service),
 ):
-    print("Refresh end point has been called")
     return await service.refresh(token.refresh_token)
 
 

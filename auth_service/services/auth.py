@@ -3,9 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth_service.repo.refresh_token_repo import RefreshTokenRepository
 from auth_service.repo.users_repo import UserRepository
-from auth_service.schemas import RegisterSchema
-from auth_service.security.password import HashingPassword
-from broker.main import send_user_event
+from auth_service.schemas import RegisterSchema, LoginSchema
+from auth_service.services.password import HashingPassword
 from security.hash.token import HashingToken
 from security.jwt import JWTService
 
@@ -25,47 +24,52 @@ class AuthService:
 
     async def register(self, data: RegisterSchema):
 
-        user = await self.user_repo.get_by_username(data.username)
+        users = await self.user_repo.get_existing_user(data.username, data.email)
 
-        if user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User with this username already exists.",
-            )
+        for user in users:
+            if user.username == data.username:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User with this username already exists.",
+                )
 
-        username = await self.user_repo.create(
+            if user.email == data.email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User with this email already exists.",
+                )
+
+        await self.user_repo.create(
             username=data.username,
+            email=data.email,
             password=HashingPassword.hash_password(data.password),
         )
 
-        await send_user_event.publish(username)
+        return data.username
 
-        return username
-
-    async def login(self, username: str, password: str):
-        user = await self.user_repo.get_by_username(username)
+    async def login(self, data: LoginSchema):
+        user = await self.user_repo.get_by_username(data.username)
 
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials."
             )
 
-        if not HashingPassword.verify_password(user.password, password):
+        if not HashingPassword.verify_password(user.password, data.password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password."
             )
 
-        access_token = self.jwt_service.create_access_token(user.id, user.admin)
+        access_token = self.jwt_service.create_access_token(user.id, user.role)
 
-        refresh_token = self.jwt_service.create_refresh_token(user.id, user.admin)
+        refresh_token = self.jwt_service.create_refresh_token(user.id, user.role)
 
-        async with self.session.begin():
-            await self.refresh_repo.delete_by_id(user.id)
+        await self.refresh_repo.delete_by_id(user.id)
 
-            await self.refresh_repo.create(
-                user_id=user.id,
-                token=HashingToken.hashing_token(refresh_token),
-            )
+        await self.refresh_repo.create(
+            user_id=user.id,
+            token=HashingToken.hashing_token(refresh_token),
+        )
 
         print(refresh_token)
         return {
@@ -77,7 +81,7 @@ class AuthService:
         payload = self.jwt_service.verify_refresh_token(refresh_token)
 
         user_id = int(payload["sub"])
-        admin = payload["admin"]
+        role = payload["role"]
 
         hash_db_token = await self.refresh_repo.get_by_id(user_id)
 
@@ -94,16 +98,12 @@ class AuthService:
                 detail="Token is already revoked.",
             )
 
-        new_access = self.jwt_service.create_access_token(user_id, admin)
+        new_access = self.jwt_service.create_access_token(user_id, role)
 
-        new_refresh = self.jwt_service.create_refresh_token(user_id, admin)
+        new_refresh = self.jwt_service.create_refresh_token(user_id, role)
 
-        # await asyncio.gather(
-        #     self.refresh_repo.delete_by_id(user_id),
-        #     self.refresh_repo.create(user_id, new_refresh)
-        # )
 
-        (await self.refresh_repo.delete_by_id(user_id),)
+        await self.refresh_repo.delete_by_id(user_id)
         await self.refresh_repo.create(user_id, new_refresh)
 
         return {

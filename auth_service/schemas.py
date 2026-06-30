@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 
 class TokenPair(BaseModel):
@@ -8,8 +8,9 @@ class TokenPair(BaseModel):
 
 
 class RegisterSchema(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., description="Username")
+    email: EmailStr = Field(..., description="Email")
+    password: str = Field(..., description="Password")
 
 
 class LoginSchema(BaseModel):
@@ -19,3 +20,9 @@ class LoginSchema(BaseModel):
 
 class RefreshSchema(BaseModel):
     refresh_token: str
+
+
+class OTPSchema(BaseModel):
+    username: str
+    email: EmailStr
+    otp_code: str

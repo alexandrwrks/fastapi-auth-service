@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth_service.repo.refresh_token_repo import RefreshTokenRepository
 from auth_service.repo.users_repo import UserRepository
-from auth_service.service import AuthService
+from auth_service.services.auth import AuthService
 from db.config import get_async_session
+from db.models.enums import Roles
 from security.jwt import JWTService
 from utils.config import settings
 
@@ -53,10 +54,10 @@ async def get_current_user(
 async def get_admin_user(
     payload: dict = Depends(get_current_user),
 ):
-    if not payload["admin"]:
+    if payload["role"] != Roles.ADMIN.value:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not an admin",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="You dont have permission to perform this action",
         )
 
     return payload

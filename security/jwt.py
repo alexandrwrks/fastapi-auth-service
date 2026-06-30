@@ -13,27 +13,27 @@ class JWTService:
         self.ACCESS_TOKEN_EXPIRE_MINUTES = setting.ACCESS_TOKEN_EXPIRE_MINUTES
         self.REFRESH_TOKEN_EXPIRE_DAYS = setting.REFRESH_TOKEN_EXPIRE_DAYS
 
-    def create_access_token(self, user_id: int, role: bool):
+    def create_access_token(self, user_id: int, role: str):
         now = datetime.now(UTC)
 
         payload = {
             "sub": str(user_id),
             "type": "access",
             "iat": now,
-            "admin": role,
+            "role": role,
             "exp": now + timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES),
         }
 
         return jwt.encode(payload, self.SECRET_KEY, algorithm=self.ALGORITHM)
 
-    def create_refresh_token(self, user_id: int, role: bool):
+    def create_refresh_token(self, user_id: int, role: str):
         now = datetime.now(UTC)
 
         payload = {
             "sub": str(user_id),
             "type": "refresh",
             "iat": now,
-            "admin": role,
+            "role": role,
             "exp": now + timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS),
         }
 
