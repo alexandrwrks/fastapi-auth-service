@@ -38,14 +38,18 @@ class AuthService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="User with this email already exists.",
                 )
+        try:
+            await self.user_repo.create(
+                username=data.username,
+                email=data.email,
+                password=HashingPassword.hash_password(data.password),
+            )
 
-        await self.user_repo.create(
-            username=data.username,
-            email=data.email,
-            password=HashingPassword.hash_password(data.password),
-        )
-
-        return data.username
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ошибка регистрации пользователя"
+            )
 
     async def login(self, data: LoginSchema):
         user = await self.user_repo.get_by_username(data.username)

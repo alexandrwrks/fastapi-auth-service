@@ -2,9 +2,7 @@ from redis.asyncio import ConnectionPool, Redis
 
 from auth_service.schemas import OTPSchema
 from notification_service.exception import OTPExpiredError
-
-SAFE_TIME_SECONDS = 300
-
+from notification_service.utils.config import settings
 
 class RedisEmail:
     def __init__(self):
@@ -14,7 +12,7 @@ class RedisEmail:
         self.client = Redis(connection_pool=self.connection)
 
     async def save_otp_code(self, email: str, otp_code: str):
-        await self.client.set(email, otp_code, ex=SAFE_TIME_SECONDS)
+        await self.client.set(email, otp_code, ex=settings.SAFE_TIME_SECONDS)
 
     async def verify_otp_code(self, email: str, otp_code: str) -> bool:
         safed_otp_code = await self.client.get(email)
