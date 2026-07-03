@@ -22,7 +22,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(auth_service_router)
 app.include_router(admin_service_router)
 # app.include_router(mq_router)
-app.include_router(prefix="/ai/v1", router=ai_v1_router)
+app.include_router(prefix="/api/v1", router=ai_v1_router)
 
 
 
